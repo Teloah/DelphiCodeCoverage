@@ -70,6 +70,7 @@ type
 
     function GenerateUnitReport(const ACoverageUnit: ICoverageStats): THtmlDetails;
     procedure AddGeneratedAt(var OutputFile: TTextWriter);
+    function CssClassByPercent(APercent: Integer): string;
   public
     constructor Create(const ACoverageConfiguration: ICoverageConfiguration);
 
@@ -292,7 +293,8 @@ begin
         td(PreLink + HtmlDetails.LinkName + PostLink) +
         td(IntToStr(CurrentStats.CoveredLineCount)) +
         td(IntToStr(CurrentStats.LineCount)) +
-        td(em(IntToStr(CurrentStats.PercentCovered) + '%'))
+        td(em(IntToStr(CurrentStats.PercentCovered) + '%'),
+           'class="' + CssClassByPercent(CurrentStats.PercentCovered) + '"')
       )
     );
   end;
@@ -354,6 +356,11 @@ begin
     AOutFile.WriteLine('table.sum tr th:first-child {text-align:center;}');
     AOutFile.WriteLine('table.sum tr td {text-align:right;}');
     AOutFile.WriteLine('table.sum tr td:first-child {text-align:left;}');
+    AOutFile.WriteLine('table.sum tr td.p0 {background: #FFCCCC;}');
+    AOutFile.WriteLine('table.sum tr td.p1 {background: #FFE5CD;}');
+    AOutFile.WriteLine('table.sum tr td.p2 {background: #FFFECE;}');
+    AOutFile.WriteLine('table.sum tr td.p3 {background: #E4FFCD;}');
+    AOutFile.WriteLine('table.sum tr td.p4 {background: #CCFFCC;}');
 	  AOutFile.WriteLine(EndTag('style'));
   end;
   AOutFile.WriteLine(EndTag('head'));
@@ -432,6 +439,19 @@ constructor THTMLCoverageReport.Create(
 begin
   inherited Create;
   FCoverageConfiguration := ACoverageConfiguration;
+end;
+
+function THTMLCoverageReport.CssClassByPercent(APercent: Integer): string;
+begin
+  case aPercent of
+    0  .. 20  : Result := 'p0';
+    21 .. 40  : Result := 'p1';
+    41 .. 60  : Result := 'p2';
+    61 .. 80  : Result := 'p3';
+    81 .. 100 : Result := 'p4';
+  else
+    Result := '';
+  end;
 end;
 
 function THTMLCoverageReport.FindSourceFile(

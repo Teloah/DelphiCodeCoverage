@@ -9,7 +9,7 @@ function WrapTag(const AValue: string; const ATag: string; const ATagAttributes:
 function p(const AValue: string): string;
 function bold(const AValue: string): string;
 function heading(const AValue: string; const ALevel: Byte): string;
-function td(const AValue: string): string;
+function td(const AValue: string; const AAttributes: string = ''): string;
 function th(const AValue: string): string;
 function tr(const AValue: string; const AAttributes: string = ''): string;
 function table(const AValue: string; const AAttributes: string = ''): string;
@@ -60,9 +60,9 @@ begin
   Result := WrapTag(AValue, 'h' + IntToStr(ALevel));
 end;
 
-function td(const AValue: string): string;
+function td(const AValue: string; const AAttributes: string = ''): string;
 begin
-  Result := WrapTag(AValue, 'td');
+  Result := WrapTag(AValue, 'td', AAttributes);
 end;
 
 function th(const AValue: string): string;
