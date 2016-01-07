@@ -334,8 +334,8 @@ begin
     AOutFile.WriteLine('td, th {background: white; margin: 0; padding: 2px 0.5em 2px 0.5em}');
     AOutFile.WriteLine('td {border-width: 0 1px 0 0;}');
     AOutFile.WriteLine('th {border-width: 1px 1px 1px 0;}');
-    AOutFile.WriteLine('p, h1, h2, h3, th {font-family: verdana,arial,sans-serif; font-size: 10pt;}');
-    AOutFile.WriteLine('td {font-family: courier,monospace; font-size: 10pt;}');
+    AOutFile.WriteLine('p, h1, h2, h3, th {font-family: sans-serif;}');
+    AOutFile.WriteLine('td {font-family: monospace;}');
     AOutFile.WriteLine('th {background: #CCCCCC;}');
 
     AOutFile.WriteLine('table.o tr td:nth-child(1) {font-weight: bold;}');
