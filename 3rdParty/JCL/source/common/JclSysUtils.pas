@@ -499,88 +499,22 @@ const
   ABORT_EXIT_CODE = {$IFDEF MSWINDOWS} ERROR_CANCELLED {$ELSE} 1223 {$ENDIF};
 
 function Execute(const CommandLine: string; OutputLineCallback: TTextHandler; RawOutput: Boolean = False;
-  AbortPtr: PBoolean = nil; ProcessPriority: TJclProcessPriority = ppNormal;
-  AutoConvertOem: Boolean = False): Cardinal; overload;
+  AbortPtr: PBoolean = nil; ProcessPriority: TJclProcessPriority = ppNormal): Cardinal; overload;
 function Execute(const CommandLine: string; AbortEvent: TJclEvent;
-  OutputLineCallback: TTextHandler; RawOutput: Boolean = False; ProcessPriority: TJclProcessPriority = ppNormal;
-  AutoConvertOem: Boolean = False): Cardinal; overload;
+  OutputLineCallback: TTextHandler; RawOutput: Boolean = False; ProcessPriority: TJclProcessPriority = ppNormal): Cardinal; overload;
 function Execute(const CommandLine: string; var Output: string; RawOutput: Boolean = False;
-  AbortPtr: PBoolean = nil; ProcessPriority: TJclProcessPriority = ppNormal;
-  AutoConvertOem: Boolean = False): Cardinal; overload;
+  AbortPtr: PBoolean = nil; ProcessPriority: TJclProcessPriority = ppNormal): Cardinal; overload;
 function Execute(const CommandLine: string; AbortEvent: TJclEvent;
-  var Output: string; RawOutput: Boolean = False; ProcessPriority: TJclProcessPriority = ppNormal;
-  AutoConvertOem: Boolean = False): Cardinal; overload;
+  var Output: string; RawOutput: Boolean = False; ProcessPriority: TJclProcessPriority = ppNormal): Cardinal; overload;
 
 function Execute(const CommandLine: string; OutputLineCallback, ErrorLineCallback: TTextHandler;
-  RawOutput: Boolean = False; RawError: Boolean = False; AbortPtr: PBoolean = nil;
-  ProcessPriority: TJclProcessPriority = ppNormal; AutoConvertOem: Boolean = False): Cardinal; overload;
+  RawOutput: Boolean = False; RawError: Boolean = False; AbortPtr: PBoolean = nil; ProcessPriority: TJclProcessPriority = ppNormal): Cardinal; overload;
 function Execute(const CommandLine: string; AbortEvent: TJclEvent;
-  OutputLineCallback, ErrorLineCallback: TTextHandler; RawOutput: Boolean = False; RawError: Boolean = False;
-  ProcessPriority: TJclProcessPriority = ppNormal; AutoConvertOem: Boolean = False): Cardinal; overload;
+  OutputLineCallback, ErrorLineCallback: TTextHandler; RawOutput: Boolean = False; RawError: Boolean = False; ProcessPriority: TJclProcessPriority = ppNormal): Cardinal; overload;
 function Execute(const CommandLine: string; var Output, Error: string;
-  RawOutput: Boolean = False; RawError: Boolean = False; AbortPtr: PBoolean = nil;
-  ProcessPriority: TJclProcessPriority = ppNormal; AutoConvertOem: Boolean = False): Cardinal; overload;
+  RawOutput: Boolean = False; RawError: Boolean = False; AbortPtr: PBoolean = nil; ProcessPriority: TJclProcessPriority = ppNormal): Cardinal; overload;
 function Execute(const CommandLine: string; AbortEvent: TJclEvent;
-  var Output, Error: string; RawOutput: Boolean = False; RawError: Boolean = False;
-  ProcessPriority: TJclProcessPriority = ppNormal; AutoConvertOem: Boolean = False): Cardinal; overload;
-
-type
-  {$IFDEF MSWINDOWS}
-  TJclExecuteCmdProcessOptionBeforeResumeEvent = procedure(const ProcessInfo: TProcessInformation) of object;
-  {$ENDIF MSWINDOWS}
-
-  TJclExecuteCmdProcessOptions = {record} class(TObject)
-  private
-    FCommandLine: string;
-    FAbortPtr: PBoolean;
-    FAbortEvent: TJclEvent;
-
-    FOutputLineCallback: TTextHandler;
-    FRawOutput: Boolean;
-    FMergeError: Boolean;
-    FErrorLineCallback: TTextHandler;
-    FRawError: Boolean;
-    FProcessPriority: TJclProcessPriority;
-
-    FAutoConvertOem: Boolean;
-    {$IFDEF MSWINDOWS}
-    FCreateProcessFlags: DWORD;
-    FBeforeResume: TJclExecuteCmdProcessOptionBeforeResumeEvent;
-    {$ENDIF MSWINDOWS}
-
-    FExitCode: Cardinal;
-    FOutput: string;
-    FError: string;
-  public
-    // in:
-    property CommandLine: string read FCommandLine write FCommandLine;
-    property AbortPtr: PBoolean read FAbortPtr write FAbortPtr;
-    property AbortEvent: TJclEvent read FAbortEvent write FAbortEvent;
-
-    property OutputLineCallback: TTextHandler read FOutputLineCallback write FOutputLineCallback;
-    property RawOutput: Boolean read FRawOutput write FRawOutput default False;
-    property MergeError: Boolean read FMergeError write FMergeError default False;
-    property ErrorLineCallback: TTextHandler read FErrorLineCallback write FErrorLineCallback;
-    property RawError: Boolean read FRawError write FRawError default False;
-    property ProcessPriority: TJclProcessPriority read FProcessPriority write FProcessPriority default ppNormal;
-
-    // AutoConvertOem assumes the process outputs OEM encoded strings and converts them to the
-    // default string encoding.
-    property AutoConvertOem: Boolean read FAutoConvertOem write FAutoConvertOem default True;
-    {$IFDEF MSWINDOWS}
-    property CreateProcessFlags: DWORD read FCreateProcessFlags write FCreateProcessFlags;
-    property BeforeResume: TJclExecuteCmdProcessOptionBeforeResumeEvent read FBeforeResume write FBeforeResume;
-    {$ENDIF MSWINDOWS}
-
-    // out:
-    property ExitCode: Cardinal read FExitCode;
-    property Output: string read FOutput;
-    property Error: string read FError;
-  public
-    constructor Create(const ACommandLine: string);
-  end;
-
-function ExecuteCmdProcess(Options: TJclExecuteCmdProcessOptions): Boolean;
+  var Output, Error: string; RawOutput: Boolean = False; RawError: Boolean = False; ProcessPriority: TJclProcessPriority = ppNormal): Cardinal; overload;
 
 type
 {$HPPEMIT 'namespace Jclsysutils'}
@@ -2750,7 +2684,6 @@ type
     Line: string;
     TextHandler: TTextHandler;
     RawOutput: Boolean;
-    AutoConvertOem: Boolean;
     Event: TJclEvent;
   end;
   PPipeInfo = ^TPipeInfo;
@@ -2808,52 +2741,23 @@ end;
 procedure InternalExecuteProcessBuffer(var PipeInfo: TPipeInfo; PipeBytesRead: Cardinal);
 var
   CR, LF: Integer;
-  {$IFDEF MSWINDOWS}
-  LineLen, Len: Integer;
-  {$ENDIF MSWINDOWS}
-  S: AnsiString;
 begin
-  {$IFDEF MSWINDOWS}
-  if PipeInfo.AutoConvertOem then
-  begin
-    {$IFDEF UNICODE}
-    Len := MultiByteToWideChar(CP_OEMCP, 0, PipeInfo.Buffer, PipeBytesRead, nil, 0);
-    LineLen := Length(PipeInfo.Line);
-    // Convert directly into the PipeInfo.Line string
-    SetLength(PipeInfo.Line, LineLen + Len);
-    MultiByteToWideChar(CP_OEMCP, 0, PipeInfo.Buffer, PipeBytesRead, PChar(PipeInfo.Line) + LineLen, Len);
-    {$ELSE}
-    Len := PipeBytesRead;
-    LineLen := Length(PipeInfo.Line);
-    // Convert directly into the PipeInfo.Line string
-    SetLength(PipeInfo.Line, LineLen + Len);
-    OemToAnsiBuff(PipeInfo.Buffer, PAnsiChar(PipeInfo.Line) + LineLen, PipeBytesRead);
-    {$ENDIF UNICODE}
-  end
-  else
-  {$ENDIF MSWINDOWS}
-  begin
-    SetString(S, PipeInfo.Buffer, PipeBytesRead); // interpret as ANSI
-    {$IFDEF UNICODE}
-    PipeInfo.Line := PipeInfo.Line + string(S); // ANSI => UNICODE
-    {$ELSE}
-    PipeInfo.Line := PipeInfo.Line + S;
-    {$ENDIF UNICODE}
-  end;
+  PipeInfo.Buffer[PipeBytesRead] := #0;
+  PipeInfo.Line := PipeInfo.Line + string(PipeInfo.Buffer);
   if Assigned(PipeInfo.TextHandler) then
-    repeat
-      CR := Pos(NativeCarriageReturn, PipeInfo.Line);
-      if CR = Length(PipeInfo.Line) then
-        CR := 0;        // line feed at CR + 1 might be missing
-      LF := Pos(NativeLineFeed, PipeInfo.Line);
-      if (CR > 0) and ((LF > CR + 1) or (LF = 0)) then
-        LF := CR;       // accept CR as line end
-      if LF > 0 then
-      begin
-        InternalExecuteProcessLine(PipeInfo, LF);
-        Delete(PipeInfo.Line, 1, LF);
-      end;
-    until LF = 0;
+  repeat
+    CR := Pos(NativeCarriageReturn, PipeInfo.Line);
+    if CR = Length(PipeInfo.Line) then
+      CR := 0;        // line feed at CR + 1 might be missing
+    LF := Pos(NativeLineFeed, PipeInfo.Line);
+    if (CR > 0) and ((LF > CR + 1) or (LF = 0)) then
+      LF := CR;       // accept CR as line end
+    if LF > 0 then
+    begin
+      InternalExecuteProcessLine(PipeInfo, LF);
+      Delete(PipeInfo.Line, 1, LF);
+    end;
+  until LF = 0;
 end;
 
 procedure InternalExecuteReadPipe(var PipeInfo: TPipeInfo; var Overlapped: TOverlapped);
@@ -2945,8 +2849,8 @@ begin
 
   InterlockedIncrement(AsyncPipeCounter);
   // In some (not so) rare instances there is a race condition
-  // where the counter is the same for two threads at the same
-  // time. This makes the CreateNamedPipe call below fail
+  // where the counter is the same for two threads at the same 
+  // time. This makes the CreateNamedPipe call below fail 
   // because of the limit set to 1 in the call.
   // So, to be sure this call succeeds, we put both the process
   // and thread id in the name of the pipe.
@@ -2983,17 +2887,10 @@ const
     (IDLE_PRIORITY_CLASS, NORMAL_PRIORITY_CLASS, HIGH_PRIORITY_CLASS, REALTIME_PRIORITY_CLASS,
      BELOW_NORMAL_PRIORITY_CLASS, ABOVE_NORMAL_PRIORITY_CLASS);
 
-{ TJclExecuteCmdProcessOptions }
-
-constructor TJclExecuteCmdProcessOptions.Create(const ACommandLine: string);
-begin
-  inherited Create;
-  FCommandLine := ACommandLine;
-  FAutoConvertOem := True;
-  FProcessPriority := ppNormal;
-end;
-
-function ExecuteCmdProcess(Options: TJclExecuteCmdProcessOptions): Boolean;
+function InternalExecute(CommandLine: string; AbortPtr: PBoolean; AbortEvent: TJclEvent;
+  var Output: string; OutputLineCallback: TTextHandler; RawOutput: Boolean;
+  MergeError: Boolean; var Error: string; ErrorLineCallback: TTextHandler; RawError: Boolean;
+  ProcessPriority: TJclProcessPriority): Cardinal;
 var
   OutPipeInfo, ErrorPipeInfo: TPipeInfo;
   Index: Cardinal;
@@ -3007,38 +2904,30 @@ var
   WaitEvents: array of TJclDispatcherObject;
   InternalAbort: Boolean;
   LastError: DWORD;
-  CommandLine: string;
-  AbortPtr: PBoolean;
-  Flags: DWORD;
 begin
-  Result := False;
-
   // hack to pass a null reference to the parameter lpNumberOfBytesRead of ReadFile
-  Options.FExitCode := $FFFFFFFF;
-
+  Result := $FFFFFFFF;
   SecurityAttr.nLength := SizeOf(SecurityAttr);
   SecurityAttr.lpSecurityDescriptor := nil;
   SecurityAttr.bInheritHandle := True;
 
   ResetMemory(OutPipeInfo, SizeOf(OutPipeInfo));
-  OutPipeInfo.TextHandler := Options.OutputLineCallback;
-  OutPipeInfo.RawOutput := Options.RawOutput;
-  OutPipeInfo.AutoConvertOem := Options.AutoConvertOem;
+  OutPipeInfo.TextHandler := OutputLineCallback;
+  OutPipeInfo.RawOutput := RawOutput;
   if not CreateAsyncPipe(OutPipeInfo.PipeRead, OutPipeInfo.PipeWrite, @SecurityAttr, 0) then
   begin
-    Options.FExitCode := GetLastError;
+    Result := GetLastError;
     Exit;
   end;
   OutPipeInfo.Event := TJclEvent.Create(@SecurityAttr, False {automatic reset}, False {not flagged}, '' {anonymous});
   ResetMemory(ErrorPipeInfo, SizeOf(ErrorPipeInfo));
-  if not Options.MergeError then
+  if not MergeError then
   begin
-    ErrorPipeInfo.TextHandler := Options.ErrorLineCallback;
-    ErrorPipeInfo.RawOutput := Options.RawError;
-    ErrorPipeInfo.AutoConvertOem := Options.AutoConvertOem;
+    ErrorPipeInfo.TextHandler := ErrorLineCallback;
+    ErrorPipeInfo.RawOutput := RawError;
     if not CreateAsyncPipe(ErrorPipeInfo.PipeRead, ErrorPipeInfo.PipeWrite, @SecurityAttr, 0) then
     begin
-      Options.FExitCode := GetLastError;
+      Result := GetLastError;
       CloseHandle(OutPipeInfo.PipeWrite);
       CloseHandle(OutPipeInfo.PipeRead);
       OutPipeInfo.Event.Free;
@@ -3053,44 +2942,27 @@ begin
   StartupInfo.wShowWindow := SW_HIDE;
   StartupInfo.hStdInput := GetStdHandle(STD_INPUT_HANDLE);
   StartupInfo.hStdOutput := OutPipeInfo.PipeWrite;
-  if Options.MergeError then
+  if MergeError then
     StartupInfo.hStdError := OutPipeInfo.PipeWrite
   else
     StartupInfo.hStdError := ErrorPipeInfo.PipeWrite;
-  CommandLine := Options.CommandLine;
   UniqueString(CommandLine); // CommandLine must be in a writable memory block
   ResetMemory(ProcessInfo, SizeOf(ProcessInfo));
   ProcessEvent := nil;
   try
-    Flags := Options.CreateProcessFlags and not (NORMAL_PRIORITY_CLASS or IDLE_PRIORITY_CLASS or
-                                                 HIGH_PRIORITY_CLASS or REALTIME_PRIORITY_CLASS);
-    Flags := Flags or ProcessPriorities[Options.ProcessPriority];
-    if Assigned(Options.BeforeResume) then
-      Flags := Flags or CREATE_SUSPENDED;
-
-    if CreateProcess(nil, PChar(CommandLine), nil, nil, True, Flags,
+    if CreateProcess(nil, PChar(CommandLine), nil, nil, True, ProcessPriorities[ProcessPriority],
       nil, nil, StartupInfo, ProcessInfo) then
     begin
-      Result := True;
       try
-        try
-          if Assigned(Options.BeforeResume) then
-            Options.BeforeResume(ProcessInfo);
-        finally
-          if Flags and CREATE_SUSPENDED <> 0 then // CREATE_SUSPENDED may also have come from CreateProcessFlags
-            ResumeThread(ProcessInfo.hThread);
-        end;
-
         // init out and error events
         CloseHandle(OutPipeInfo.PipeWrite);
         OutPipeInfo.PipeWrite := 0;
-        if not Options.MergeError then
+        if not MergeError then
         begin
           CloseHandle(ErrorPipeInfo.PipeWrite);
           ErrorPipeInfo.PipeWrite := 0;
         end;
         InternalAbort := False;
-        AbortPtr := Options.AbortPtr;
         if AbortPtr <> nil then
           AbortPtr^ := {$IFDEF FPC}Byte({$ENDIF}False{$IFDEF FPC}){$ENDIF}
         else
@@ -3103,24 +2975,24 @@ begin
         // add the output event
         WaitEvents[1] := OutPipeInfo.Event;
         // add the error event
-        if not Options.MergeError then
+        if not MergeError then
         begin
           SetLength(WaitEvents, 3);
           WaitEvents[2] := ErrorPipeInfo.Event;
         end;
         // add the abort event if any
-        if Options.AbortEvent <> nil then
+        if AbortEvent <> nil then
         begin
-          Options.AbortEvent.ResetEvent;
+          AbortEvent.ResetEvent;
           Index := Length(WaitEvents);
           SetLength(WaitEvents, Index + 1);
-          WaitEvents[Index] := Options.AbortEvent;
+          WaitEvents[Index] := AbortEvent;
         end;
         // init the asynchronous reads
         ResetMemory(OutOverlapped, SizeOf(OutOverlapped));
         OutOverlapped.hEvent := OutPipeInfo.Event.Handle;
         InternalExecuteReadPipe(OutPipeInfo, OutOverlapped);
-        if not Options.MergeError then
+        if not MergeError then
         begin
           ResetMemory(ErrorOverlapped, SizeOf(ErrorOverlapped));
           ErrorOverlapped.hEvent := ErrorPipeInfo.Event.Handle;
@@ -3140,14 +3012,14 @@ begin
             InternalExecuteHandlePipeEvent(OutPipeInfo, OutOverlapped);
           end
           else
-          if (Index = (WAIT_OBJECT_0 + 2)) and not Options.MergeError then
+          if (Index = (WAIT_OBJECT_0 + 2)) and not MergeError then
           begin
             // event on error
             InternalExecuteHandlePipeEvent(ErrorPipeInfo, ErrorOverlapped);
           end
           else
-          if ((Index = (WAIT_OBJECT_0 + 2)) and Options.MergeError) or
-             ((Index = (WAIT_OBJECT_0 + 3)) and not Options.MergeError) then
+          if ((Index = (WAIT_OBJECT_0 + 2)) and MergeError) or
+             ((Index = (WAIT_OBJECT_0 + 3)) and not MergeError) then
             // event on abort
             AbortPtr^ := {$IFDEF FPC}Byte({$ENDIF}True{$IFDEF FPC}){$ENDIF}
           else
@@ -3159,19 +3031,19 @@ begin
         end;
         if {$IFDEF FPC}Boolean({$ENDIF}AbortPtr^{$IFDEF FPC}){$ENDIF} then
           TerminateProcess(ProcessEvent.Handle, Cardinal(ABORT_EXIT_CODE));
-        if (ProcessEvent.WaitForever = {$IFDEF RTL280_UP}TJclWaitResult.{$ENDIF RTL280_UP}wrSignaled) and not GetExitCodeProcess(ProcessEvent.Handle, Options.FExitCode) then
-          Options.FExitCode := $FFFFFFFF;
+        if (ProcessEvent.WaitForever = {$IFDEF RTL280_UP}TJclWaitResult.{$ENDIF RTL280_UP}wrSignaled) and not GetExitCodeProcess(ProcessEvent.Handle, Result) then
+          Result := $FFFFFFFF;
         CloseHandle(ProcessInfo.hThread);
         ProcessInfo.hThread := 0;
         if OutPipeInfo.PipeRead <> 0 then
           // read data remaining in output pipe
           InternalExecuteFlushPipe(OutPipeinfo, OutOverlapped);
-        if not Options.MergeError and (ErrorPipeInfo.PipeRead <> 0) then
+        if not MergeError and (ErrorPipeInfo.PipeRead <> 0) then
           // read data remaining in error pipe
           InternalExecuteFlushPipe(ErrorPipeInfo, ErrorOverlapped);
       except
         // always terminate process in case of an exception.
-        // This is especially useful when an exception occurred in one of
+        // This is especially useful when an exception occured in one of
         // the texthandler but only do it if the process actually started,
         // this prevents eating up the last error value by calling those
         // three functions with an invalid handle
@@ -3182,7 +3054,7 @@ begin
         begin
           TerminateProcess(ProcessInfo.hProcess, Cardinal(ABORT_EXIT_CODE));
           WaitForSingleObject(ProcessInfo.hProcess, INFINITE);
-          GetExitCodeProcess(ProcessInfo.hProcess, Options.FExitCode);
+          GetExitCodeProcess(ProcessInfo.hProcess, Result);
         end;
 
         raise;
@@ -3219,7 +3091,7 @@ var
   Pipe: PIOFile;
   Cmd: string;
 begin
-  Cmd := Format('%s 2>&1', [Options.CommandLine]);
+  Cmd := Format('%s 2>&1', [CommandLine]);
   Pipe := nil;
   try
     Pipe := Libc.popen(PChar(Cmd), 'r');
@@ -3244,52 +3116,20 @@ begin
       // (shouldn't happen, but you never know)
       InternalExecuteProcessLine(OutPipeInfo, Length(OutPipeInfo.Line))
     else
-      if Options.RawOutput then
-        Options.FOutput := OutPipeInfo.Line
+      if RawOutput then
+        Output := Output + OutPipeInfo.Line
       else
-        Options.FOutput := InternalExecuteMuteCRTerminatedLines(OutPipeInfo.Line);
+        Output := Output + InternalExecuteMuteCRTerminatedLines(OutPipeInfo.Line);
   if ErrorPipeInfo.Line <> '' then
     if Assigned(ErrorPipeInfo.TextHandler) then
       // error wasn't terminated by a line feed...
       // (shouldn't happen, but you never know)
       InternalExecuteProcessLine(ErrorPipeInfo, Length(ErrorPipeInfo.Line))
     else
-      if Options.RawError then
-        Options.FError := ErrorPipeInfo.Line
+      if RawError then
+        Error := Error + ErrorPipeInfo.Line
       else
-        Options.FError := InternalExecuteMuteCRTerminatedLines(ErrorPipeInfo.Line);
-end;
-
-function InternalExecute(CommandLine: string; AbortPtr: PBoolean; AbortEvent: TJclEvent;
-  var Output: string; OutputLineCallback: TTextHandler; RawOutput: Boolean;
-  MergeError: Boolean; var Error: string; ErrorLineCallback: TTextHandler; RawError: Boolean;
-  ProcessPriority: TJclProcessPriority; AutoConvertOem: Boolean): Cardinal;
-var
-  Options: TJclExecuteCmdProcessOptions;
-begin
-  Options := TJclExecuteCmdProcessOptions.Create(CommandLine);
-  try
-    Options.AutoConvertOem := AutoConvertOem;
-
-    Options.AbortPtr := AbortPtr;
-    Options.AbortEvent := AbortEvent;
-    Options.OutputLineCallback := OutputLineCallback;
-    Options.RawOutput := RawOutput;
-    Options.MergeError := MergeError;
-    Options.ErrorLineCallback := ErrorLineCallback;
-    Options.RawError := RawError;
-    Options.ProcessPriority := ProcessPriority;
-
-    ExecuteCmdProcess(Options);
-
-    Result := Options.ExitCode;
-
-    // Append => backward compatiblity
-    Output := Output + Options.Output;
-    Error := Error + Options.Error;
-  finally
-    Options.Free;
-  end;
+        Error := Error + InternalExecuteMuteCRTerminatedLines(ErrorPipeInfo.Line);
 end;
 
 { TODO -cHelp :
@@ -3297,23 +3137,20 @@ RawOutput: Do not process isolated carriage returns (#13).
 That is, for RawOutput = False, lines not terminated by a line feed (#10) are deleted from Output. }
 
 function Execute(const CommandLine: string; var Output: string; RawOutput: Boolean;
-  AbortPtr: PBoolean; ProcessPriority: TJclProcessPriority; AutoConvertOem: Boolean): Cardinal;
+  AbortPtr: PBoolean; ProcessPriority: TJclProcessPriority): Cardinal;
 var
   Error: string;
 begin
   Error := '';
-  Result := InternalExecute(CommandLine, AbortPtr, nil, Output, nil, RawOutput, True, Error,
-    nil, False, ProcessPriority, AutoConvertOem);
+  Result := InternalExecute(CommandLine, AbortPtr, nil, Output, nil, RawOutput, True, Error, nil, False, ProcessPriority);
 end;
 
-function Execute(const CommandLine: string; AbortEvent: TJclEvent; var Output: string; RawOutput: Boolean;
-  ProcessPriority: TJclProcessPriority; AutoConvertOem: Boolean): Cardinal;
+function Execute(const CommandLine: string; AbortEvent: TJclEvent; var Output: string; RawOutput: Boolean; ProcessPriority: TJclProcessPriority): Cardinal;
 var
   Error: string;
 begin
   Error := '';
-  Result := InternalExecute(CommandLine, nil, AbortEvent, Output, nil, RawOutput, True, Error,
-    nil, False, ProcessPriority, AutoConvertOem);
+  Result := InternalExecute(CommandLine, nil, AbortEvent, Output, nil, RawOutput, True, Error, nil, False, ProcessPriority);
 end;
 
 { TODO -cHelp :
@@ -3321,25 +3158,22 @@ Author: Robert Rossmair
 OutputLineCallback called once per line of output. }
 
 function Execute(const CommandLine: string; OutputLineCallback: TTextHandler; RawOutput: Boolean;
-  AbortPtr: PBoolean; ProcessPriority: TJclProcessPriority; AutoConvertOem: Boolean): Cardinal;
+  AbortPtr: PBoolean; ProcessPriority: TJclProcessPriority): Cardinal;
 var
   Output, Error: string;
 begin
   Output := '';
   Error := '';
-  Result := InternalExecute(CommandLine, AbortPtr, nil, Output, OutputLineCallback, RawOutput, True, Error,
-    nil, False, ProcessPriority, AutoConvertOem);
+  Result := InternalExecute(CommandLine, AbortPtr, nil, Output, OutputLineCallback, RawOutput, True, Error, nil, False, ProcessPriority);
 end;
 
-function Execute(const CommandLine: string; AbortEvent: TJclEvent; OutputLineCallback: TTextHandler; RawOutput: Boolean;
-  ProcessPriority: TJclProcessPriority; AutoConvertOem: Boolean): Cardinal;
+function Execute(const CommandLine: string; AbortEvent: TJclEvent; OutputLineCallback: TTextHandler; RawOutput: Boolean; ProcessPriority: TJclProcessPriority): Cardinal;
 var
   Output, Error: string;
 begin
   Output := '';
   Error := '';
-  Result := InternalExecute(CommandLine, nil, AbortEvent, Output, OutputLineCallback, RawOutput, True, Error,
-    nil, False, ProcessPriority, AutoConvertOem);
+  Result := InternalExecute(CommandLine, nil, AbortEvent, Output, OutputLineCallback, RawOutput, True, Error, nil, False, ProcessPriority);
 end;
 
 { TODO -cHelp :
@@ -3347,17 +3181,15 @@ RawOutput: Do not process isolated carriage returns (#13).
 That is, for RawOutput = False, lines not terminated by a line feed (#10) are deleted from Output. }
 
 function Execute(const CommandLine: string; var Output, Error: string; RawOutput, RawError: Boolean;
-  AbortPtr: PBoolean; ProcessPriority: TJclProcessPriority; AutoConvertOem: Boolean): Cardinal;
+  AbortPtr: PBoolean; ProcessPriority: TJclProcessPriority): Cardinal;
 begin
-  Result := InternalExecute(CommandLine, AbortPtr, nil, Output, nil, RawOutput, False, Error,
-    nil, RawError, ProcessPriority, AutoConvertOem);
+  Result := InternalExecute(CommandLine, AbortPtr, nil, Output, nil, RawOutput, False, Error, nil, RawError, ProcessPriority);
 end;
 
 function Execute(const CommandLine: string; AbortEvent: TJclEvent; var Output, Error: string;
-  RawOutput, RawError: Boolean; ProcessPriority: TJclProcessPriority; AutoConvertOem: Boolean): Cardinal;
+  RawOutput, RawError: Boolean; ProcessPriority: TJclProcessPriority): Cardinal;
 begin
-  Result := InternalExecute(CommandLine, nil, AbortEvent, Output, nil, RawOutput, False, Error,
-    nil, RawError, ProcessPriority, AutoConvertOem);
+  Result := InternalExecute(CommandLine, nil, AbortEvent, Output, nil, RawOutput, False, Error, nil, RawError, ProcessPriority);
 end;
 
 { TODO -cHelp :
@@ -3365,25 +3197,23 @@ Author: Robert Rossmair
 OutputLineCallback called once per line of output. }
 
 function Execute(const CommandLine: string; OutputLineCallback, ErrorLineCallback: TTextHandler;
-  RawOutput, RawError: Boolean; AbortPtr: PBoolean; ProcessPriority: TJclProcessPriority; AutoConvertOem: Boolean): Cardinal;
+  RawOutput, RawError: Boolean; AbortPtr: PBoolean; ProcessPriority: TJclProcessPriority): Cardinal;
 var
   Output, Error: string;
 begin
   Output := '';
   Error := '';
-  Result := InternalExecute(CommandLine, AbortPtr, nil, Output, OutputLineCallback, RawOutput, False, Error,
-    ErrorLineCallback, RawError, ProcessPriority, AutoConvertOem);
+  Result := InternalExecute(CommandLine, AbortPtr, nil, Output, OutputLineCallback, RawOutput, False, Error, ErrorLineCallback, RawError, ProcessPriority);
 end;
 
 function Execute(const CommandLine: string; AbortEvent: TJclEvent; OutputLineCallback, ErrorLineCallback: TTextHandler;
-  RawOutput, RawError: Boolean; ProcessPriority: TJclProcessPriority; AutoConvertOem: Boolean): Cardinal;
+  RawOutput, RawError: Boolean; ProcessPriority: TJclProcessPriority): Cardinal;
 var
   Output, Error: string;
 begin
   Output := '';
   Error := '';
-  Result := InternalExecute(CommandLine, nil, AbortEvent, Output, OutputLineCallback, RawOutput, False, Error,
-    ErrorLineCallback, RawError, ProcessPriority, AutoConvertOem);
+  Result := InternalExecute(CommandLine, nil, AbortEvent, Output, OutputLineCallback, RawOutput, False, Error, ErrorLineCallback, RawError, ProcessPriority);
 end;
 
 //=== { TJclCommandLineTool } ================================================
@@ -3407,7 +3237,7 @@ var
 begin
   S := PathRemoveSeparator(Path);
   {$IFDEF MSWINDOWS}
-  S := AnsiLowerCase(S); // file names are case insensitive
+  S := LowerCase(S); // file names are case insensitive
   {$ENDIF MSWINDOWS}
   S := Format('-%s%s', [Option, S]);
   // avoid duplicate entries (note that search is case sensitive)
@@ -4033,7 +3863,7 @@ begin
         SL.Free;
       end;
       // Keep the logfile Open when it was opened before and the KeepOpen is active
-      if not (WasOpen and KeepOpen) then
+      if Not (WasOpen and KeepOpen) then
         CloseLog;
     end;
   end;

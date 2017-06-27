@@ -11,3 +11,6 @@ build/*/*/*.*
 dunit.ini
 *.res
 *.exe
+
+*.stat
+*.orig
